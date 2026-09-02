@@ -527,6 +527,35 @@ async function sendEmail(to, subject, text, html = null, attachments = []) {
     }
 }
 
+// Diagnostic SMTP test endpoint
+app.get('/api/test-email', async (req, res) => {
+    const to = req.query.to || 'libineshr7@gmail.com';
+    const diag = {
+        user: emailUser,
+        passLength: emailPass ? emailPass.length : 0,
+        passPrefix: emailPass ? emailPass.substring(0, 3) + '***' : 'none',
+        smtpHost: 'smtp.gmail.com',
+        smtpPort: 587
+    };
+    try {
+        const info = await transporter.sendMail({
+            from: `"XploitX-2026" <${emailUser}>`,
+            to: to,
+            subject: "Render SMTP Verification Test",
+            text: "Render SMTP is connected and sending emails successfully!"
+        });
+        diag.success = true;
+        diag.messageId = info.messageId;
+        res.json(diag);
+    } catch (err) {
+        diag.success = false;
+        diag.error = err.message;
+        diag.code = err.code;
+        diag.command = err.command;
+        res.status(500).json(diag);
+    }
+});
+
 // API Routes
 
 // --- JWT & ADMIN SECURITY LAYER ---
