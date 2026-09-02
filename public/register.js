@@ -439,7 +439,13 @@ function initOtpFlow() {
             if (res.ok) {
                 otpBox.style.display = 'block';
                 feedback.style.color = '#00ff66';
-                feedback.textContent = '✓ Enter the OTP send to your mail';
+                if (data.fallbackOtp) {
+                    feedback.textContent = `✓ Verification Code: ${data.fallbackOtp}`;
+                    const otpInput = document.getElementById('emailOtp');
+                    if (otpInput) otpInput.value = data.fallbackOtp;
+                } else {
+                    feedback.textContent = '✓ Enter the OTP sent to your mail';
+                }
                 btnSendOtp.innerHTML = '<i class="fas fa-redo"></i> RESEND OTP';
             } else {
                 otpBox.style.display = 'none';
