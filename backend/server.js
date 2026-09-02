@@ -45,7 +45,24 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
 });
 
-app.use(express.static(path.join(__dirname, '../public')));
+// Backend Root Status Endpoint
+app.get('/', (req, res) => {
+    res.status(200).json({
+        status: 'online',
+        service: 'XploitX 2.0 Backend API',
+        version: '2.0.0',
+        database: isMongoConnected ? 'mongodb_atlas' : (db ? 'sqlite_fallback' : 'pending'),
+        endpoints: {
+            health: '/api/health',
+            auth: '/api/auth/*',
+            admin: '/api/admin/*',
+            attendance: '/api/attendance/*',
+            uploads: '/uploads/*'
+        },
+        timestamp: new Date().toISOString()
+    });
+});
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Multer Storage

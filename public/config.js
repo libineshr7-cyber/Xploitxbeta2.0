@@ -8,9 +8,8 @@
  *    set RENDER_BACKEND_URL to your Render service URL (e.g. 'https://xploitx-backend.onrender.com').
  */
 window.XPLOITX_CONFIG = {
-    // Leave empty ('') to use Vercel proxy rewrites (recommended),
-    // or enter your Render URL without trailing slash (e.g. 'https://xploitx-backend.onrender.com')
-    RENDER_BACKEND_URL: ''
+    // Production Render backend URL
+    RENDER_BACKEND_URL: 'https://xploitx-backend.onrender.com'
 };
 
 (function () {
