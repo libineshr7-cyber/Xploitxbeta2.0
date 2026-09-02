@@ -3,6 +3,8 @@
   "outputDirectory": "public",
   "cleanUrls": true,
   "trailingSlash": false,
+  "installCommand": "echo 'Frontend ready'",
+  "buildCommand": "echo 'Build complete'",
   "rewrites": [
     {
       "source": "/api/:path*",
