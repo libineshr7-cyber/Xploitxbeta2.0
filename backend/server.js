@@ -45,25 +45,32 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
 });
 
-// Backend Root Status Endpoint
-app.get('/', (req, res) => {
-    res.status(200).json({
-        status: 'online',
-        service: 'XploitX 2.0 Backend API',
-        version: '2.0.0',
-        database: isMongoConnected ? 'mongodb_atlas' : (db ? 'sqlite_fallback' : 'pending'),
-        endpoints: {
-            health: '/api/health',
-            auth: '/api/auth/*',
-            admin: '/api/admin/*',
-            attendance: '/api/attendance/*',
-            uploads: '/uploads/*'
-        },
-        timestamp: new Date().toISOString()
-    });
-});
-
+// Serve static frontend assets from public directory
+app.use(express.static(path.join(__dirname, '../public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Clean page routes for fullstack hosting on Render
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+app.get('/about', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/about.html'));
+});
+app.get('/register', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/register.html'));
+});
+app.get('/prizes', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/prizes.html'));
+});
+app.get('/rules', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/rules.html'));
+});
+app.get('/doom', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/doom.html'));
+});
+app.get('/attendance', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/attendance.html'));
+});
 
 // Multer Storage
 const multer = require('multer');
@@ -472,24 +479,29 @@ async function addAttendanceRecord(teamId, teamName, leaderName, leaderPhone) {
 initialiseDBAndServer();
 
 // --- EMAIL CONFIGURATION ---
+const emailUser = (process.env.EMAIL_USER || 'xploitxbeta2.0@gmail.com').trim();
+const emailPass = (process.env.EMAIL_PASS || 'yuanlyrhcqpihvqc').replace(/\s+/g, '');
+
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // TLS
     auth: {
-        user: process.env.EMAIL_USER ? process.env.EMAIL_USER.trim() : '',
-        pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s+/g, '') : ''
+        user: emailUser,
+        pass: emailPass
     },
     tls: {
         rejectUnauthorized: false
     },
-    connectionTimeout: 7000,
-    greetingTimeout: 4000,
-    socketTimeout: 7000
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 30000
 });
 
 async function sendEmail(to, subject, text, html = null, attachments = []) {
     console.log(`Sending email to ${to}...`);
     try {
-        const senderEmail = process.env.EMAIL_USER ? process.env.EMAIL_USER.trim() : '';
+        const senderEmail = emailUser;
         const mailOptions = {
             from: `"XploitX-2026" <${senderEmail}>`,
             to: to,
@@ -503,7 +515,7 @@ async function sendEmail(to, subject, text, html = null, attachments = []) {
 
         const sendPromise = transporter.sendMail(mailOptions);
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("Email server connection timed out. Please check EMAIL_USER and EMAIL_PASS environment variables on deployment server.")), 8000)
+            setTimeout(() => reject(new Error("Email server connection timed out. Please check EMAIL_USER and EMAIL_PASS.")), 25000)
         );
 
         const info = await Promise.race([sendPromise, timeoutPromise]);
@@ -675,7 +687,9 @@ app.post('/api/auth/send-verification-otp', async (req, res) => {
 
     const text = `XPLOITX 2.0 BETA - Email Verification\n\nDear ${recipientName},\n\nUse the code below to verify your email address:\n\n${otp}\n\nThis OTP is valid for 10 minutes.\n\nPrathyusha Engineering College - Department of Cyber Security`;
 
-    if (process.env.EMAIL_USER && !process.env.EMAIL_USER.includes('your-email')) {
+    console.log(`[VERIFICATION OTP FOR ${email}]: ${otp}`);
+
+    if (emailUser && !emailUser.includes('your-email')) {
         const result = await sendEmail(email, subject, text, html);
         if (!result.success) {
             let errorMsg = result.error || "Failed to send email.";
