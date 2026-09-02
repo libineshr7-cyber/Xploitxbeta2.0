@@ -478,8 +478,9 @@ async function addAttendanceRecord(teamId, teamName, leaderName, leaderPhone) {
 
 initialiseDBAndServer();
 
-// --- EMAIL CONFIGURATION ---
-const emailUser = (process.env.EMAIL_USER || 'xploitxbeta2.0@gmail.com').trim();
+// --- EMAIL CONFIGURATION (Brevo HTTPS API & SMTP Fallback) ---
+const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
+const emailUser = (process.env.EMAIL_USER || 'libineshr7@gmail.com').trim();
 const emailPass = (process.env.EMAIL_PASS || 'yuanlyrhcqpihvqc').replace(/\s+/g, '');
 
 const transporter = nodemailer.createTransport({
@@ -500,6 +501,53 @@ const transporter = nodemailer.createTransport({
 
 async function sendEmail(to, subject, text, html = null, attachments = []) {
     console.log(`Sending email to ${to}...`);
+
+    // Priority 1: Brevo HTTPS REST API (Port 443 - 100% reliable on Render)
+    if (BREVO_API_KEY) {
+        try {
+            console.log(`Dispatching via Brevo HTTPS API to ${to}...`);
+            const senderEmail = process.env.BREVO_SENDER_EMAIL || 'libineshr7@gmail.com';
+            const brevoPayload = {
+                sender: {
+                    name: "XPLOITX 2.0 BETA",
+                    email: senderEmail
+                },
+                to: [{ email: to, name: to }],
+                subject: subject,
+                htmlContent: html || `<p>${text}</p>`,
+                textContent: text
+            };
+
+            if (attachments && attachments.length > 0) {
+                brevoPayload.attachment = attachments.map(att => ({
+                    name: att.filename,
+                    content: att.content ? att.content.toString('base64') : (att.path && fs.existsSync(att.path) ? fs.readFileSync(att.path).toString('base64') : '')
+                }));
+            }
+
+            const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+                method: 'POST',
+                headers: {
+                    'accept': 'application/json',
+                    'api-key': BREVO_API_KEY.trim(),
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify(brevoPayload)
+            });
+
+            const resData = await response.json();
+            if (response.ok) {
+                console.log("Brevo email sent successfully! Message ID:", resData.messageId);
+                return { success: true, messageId: resData.messageId, provider: 'brevo' };
+            } else {
+                console.warn("Brevo API response error:", resData);
+            }
+        } catch (brevoErr) {
+            console.warn("Brevo API fetch error:", brevoErr.message);
+        }
+    }
+
+    // Priority 2: Fallback to Nodemailer transporter
     try {
         const senderEmail = emailUser;
         const mailOptions = {
@@ -520,39 +568,26 @@ async function sendEmail(to, subject, text, html = null, attachments = []) {
 
         const info = await Promise.race([sendPromise, timeoutPromise]);
         console.log("Message sent: %s", info.messageId);
-        return { success: true };
+        return { success: true, provider: 'smtp' };
     } catch (error) {
         console.error("Error sending email:", error);
         return { success: false, error: error.message };
     }
 }
 
-// Diagnostic SMTP test endpoint
+// Diagnostic test endpoint
 app.get('/api/test-email', async (req, res) => {
     const to = req.query.to || 'libineshr7@gmail.com';
-    const diag = {
-        user: emailUser,
-        passLength: emailPass ? emailPass.length : 0,
-        passPrefix: emailPass ? emailPass.substring(0, 3) + '***' : 'none',
-        smtpHost: 'smtp.gmail.com',
-        smtpPort: 587
-    };
     try {
-        const info = await transporter.sendMail({
-            from: `"XploitX-2026" <${emailUser}>`,
-            to: to,
-            subject: "Render SMTP Verification Test",
-            text: "Render SMTP is connected and sending emails successfully!"
-        });
-        diag.success = true;
-        diag.messageId = info.messageId;
-        res.json(diag);
+        const result = await sendEmail(
+            to,
+            "XploitX 2.0 Beta - Verification Service Test",
+            "This is a test message from your live XploitX server. Brevo email delivery is working 100%!",
+            "<div style='font-family: Arial, sans-serif; background: #050914; color: #fff; padding: 20px; border-radius: 8px; border: 1px solid #00ff66;'><h2 style='color: #00ff66;'>Email Service Operational!</h2><p>Your XploitX 2.0 Beta OTP delivery service is online and verified.</p></div>"
+        );
+        res.json(result);
     } catch (err) {
-        diag.success = false;
-        diag.error = err.message;
-        diag.code = err.code;
-        diag.command = err.command;
-        res.status(500).json(diag);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
