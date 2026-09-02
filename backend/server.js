@@ -45,32 +45,48 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
 });
 
-// Serve static frontend assets from public directory
-app.use(express.static(path.join(__dirname, '../public')));
+// Determine public directory dynamically (works whether Root Directory is repository root or backend)
+const publicDir = fs.existsSync(path.join(__dirname, '../public'))
+    ? path.join(__dirname, '../public')
+    : (fs.existsSync(path.join(__dirname, 'public')) ? path.join(__dirname, 'public') : path.join(process.cwd(), 'public'));
+
+console.log(`[Static Files]: Serving frontend from: ${publicDir}`);
+
+app.use(express.static(publicDir));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Clean page routes for fullstack hosting on Render
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/index.html'));
-});
-app.get('/about', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/about.html'));
-});
-app.get('/register', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/register.html'));
-});
-app.get('/prizes', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/prizes.html'));
-});
-app.get('/rules', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/rules.html'));
-});
-app.get('/doom', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/doom.html'));
-});
-app.get('/attendance', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/attendance.html'));
-});
+// Helper to serve page files
+const servePage = (fileName) => (req, res) => {
+    const filePath = path.join(publicDir, fileName);
+    if (fs.existsSync(filePath)) {
+        res.sendFile(filePath);
+    } else {
+        res.status(404).send(`Error: ${fileName} not found in ${publicDir}`);
+    }
+};
+
+// Explicit routes for both clean URLs and .html extensions
+app.get('/', servePage('index.html'));
+app.get('/index', servePage('index.html'));
+app.get('/index.html', servePage('index.html'));
+
+app.get('/register', servePage('register.html'));
+app.get('/register.html', servePage('register.html'));
+
+app.get('/about', servePage('about.html'));
+app.get('/about.html', servePage('about.html'));
+
+app.get('/prizes', servePage('prizes.html'));
+app.get('/prizes.html', servePage('prizes.html'));
+
+app.get('/rules', servePage('rules.html'));
+app.get('/rules.html', servePage('rules.html'));
+
+app.get('/doom', servePage('doom.html'));
+app.get('/doom.html', servePage('doom.html'));
+
+app.get('/attendance', servePage('attendance.html'));
+app.get('/attendance.html', servePage('attendance.html'));
 
 // Multer Storage
 const multer = require('multer');
