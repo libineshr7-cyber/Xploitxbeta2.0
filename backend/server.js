@@ -496,7 +496,7 @@ initialiseDBAndServer();
 
 // --- EMAIL CONFIGURATION (Brevo HTTPS API & SMTP Fallback) ---
 const BREVO_API_KEY = process.env.BREVO_API_KEY || '';
-const emailUser = (process.env.EMAIL_USER || 'libineshr7@gmail.com').trim();
+const emailUser = (process.env.EMAIL_USER || 'xploitxbeta2.0@gmail.com').trim();
 const emailPass = (process.env.EMAIL_PASS || 'yuanlyrhcqpihvqc').replace(/\s+/g, '');
 
 const transporter = nodemailer.createTransport({
@@ -522,7 +522,7 @@ async function sendEmail(to, subject, text, html = null, attachments = []) {
     if (BREVO_API_KEY) {
         try {
             console.log(`Dispatching via Brevo HTTPS API to ${to}...`);
-            const senderEmail = process.env.BREVO_SENDER_EMAIL || 'libineshr7@gmail.com';
+            const senderEmail = process.env.BREVO_SENDER_EMAIL || emailUser || 'xploitxbeta2.0@gmail.com';
             const brevoPayload = {
                 sender: {
                     name: "XPLOITX 2.0 BETA",
