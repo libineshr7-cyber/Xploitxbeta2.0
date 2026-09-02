@@ -1,9 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
-const src = fs.existsSync('public') && fs.statSync('public').isDirectory() ? 'public' : '.';
-const outDir = path.join('.vercel', 'output', 'static');
+let src = '.';
+if (fs.existsSync('public') && fs.statSync('public').isDirectory()) {
+    src = 'public';
+} else if (fs.existsSync('../public') && fs.statSync('../public').isDirectory()) {
+    src = '../public';
+}
 
+const outDir = path.join('.vercel', 'output', 'static');
 fs.mkdirSync(outDir, { recursive: true });
 
 const ignoreList = new Set(['.vercel', '.git', 'node_modules', 'backend', 'build.js', 'package.json', 'package-lock.json', 'render.yaml', 'DEPLOYMENT.md']);
@@ -20,4 +25,4 @@ for (const file of files) {
     }
 }
 
-console.log('✅ Static build complete! Output placed in .vercel/output/static');
+console.log(`✅ Static build complete! Copied from ${src} to .vercel/output/static`);
